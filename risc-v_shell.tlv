@@ -68,12 +68,15 @@
    //Instruction fields extraction according to its type
    $opcode[6:0] = $instr[6:0];
    $rd[4:0] = $instr[11:7];
-   
    $rs1[4:0] = $instr[19:15];
-      
    $rs2[4:0] = $instr[24:20];
-      
    $funct3[2:0] = $instr[14:12];
+   $imm[31:0] = $is_i_instr ? {{21{$instr[31]}}, $instr[30:20]} : 
+      $is_s_instr ? {{21{$instr[31]}}, $instr[30:25], $instr[11:8], $instr[7]} : 
+      $is_b_instr ? {{20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0} : 
+      $is_u_instr ? {$instr[31:12], {12{1'b0}}} : 
+      $is_j_instr ? {{12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21], 1'b0} :
+      {32{1'b0}};
       
    //Validating instruction fields
    $rd_valid = $is_r_instr | $is_i_instr | 
@@ -88,6 +91,19 @@
       $is_b_instr;
       
    $imm_valid = ~$is_r_instr;
+   
+   //Instruction decode
+   $dec_bits[10:0] = {$instr[30], $funct3, $opcode};
+   
+   $is_beq = $dec_bits ==? 11'bx_000_1100011;
+   $is_bne = $dec_bits ==? 11'bx_001_1100011;
+   $is_blt = $dec_bits ==? 11'bx_100_1100011;
+   $is_bge = $dec_bits ==? 11'bx_101_1100011;
+   $is_bltu = $dec_bits ==? 11'bx_110_1100011;
+   $is_bgeu = $dec_bits ==? 11'bx_111_1100011;
+   
+   $is_addi = $dec_bits ==? 11'bx_000_0010011;
+   $is_add = $dec_bits ==? 11'b0_000_0110011;
    
    //`BOGUS_USE($rd $rd_valid $rs1 $rs1_valid $rs2 $rs2_valid
    //   $funct3 $funct3_valid $imm_valid)
