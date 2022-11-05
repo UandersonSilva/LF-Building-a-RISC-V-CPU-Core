@@ -48,7 +48,11 @@
    // YOUR CODE HERE
    // ...
    //PC logic
-   $next_pc[31:0] = $reset ? 32'd0 : ($pc[31:0] + 32'd1);
+   $next_pc[31:0] = 
+      $reset ? 32'd0 : 
+      $taken_br ? $br_tgt_pc[31:0] : 
+      ($pc[31:0] + 32'd1);
+   
    $pc[31:0] = >>1$next_pc[31:0];
    
    //IMem logic
@@ -113,13 +117,27 @@
       {32{1'b0}};
       
    //Avoiding rfx0 writing
-   $wr_en = ~($rd ==? 5'b0);
+   $wr_en = ($rd == 5'b0) ? 1'b0 : $rd_valid;
+   
+   //Branch logic
+   $taken_br = 
+      $is_beq ? ($src1_value == $src2_value) : 
+      $is_bne ? ($src1_value != $src2_value) : 
+      $is_blt ? ($src1_value < $src2_value) ^ ($src1_value[31] != $src2_value[31]): 
+      $is_bge ? ($src1_value >= $src2_value) ^ ($src1_value[31] != $src2_value[31]): 
+      $is_bltu ? ($src1_value < $src2_value) :
+      $is_bgeu ? ($src1_value >= $src2_value) : 1'b0;
+      
+   $br_tgt_pc[31:0] = $pc[31:0] + $imm[31:0];
+   $rd1_en = $rs1_valid;
+   $rd2_en = $rs2_valid;
   
    //`BOGUS_USE($rd $rd_valid $rs1 $rs1_valid $rs2 $rs2_valid
    //   $funct3 $funct3_valid $imm_valid)
    
    // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = 1'b0;
+   //*passed = 1'b0;
+   m4+tb()
    *failed = *cyc_cnt > M4_MAX_CYC;
    
    m4+rf(32, 32, $reset, $wr_en, $rd[4:0], $result[31:0], $rd1_en, $rs1[4:0], $src1_value, $rd2_en, $rs2[4:0], $src2_value)
