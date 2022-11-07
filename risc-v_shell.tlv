@@ -145,7 +145,7 @@
       $is_andi ? $src1_value & $imm :
       $is_ori ? $src1_value | $imm :
       $is_xori ? $src1_value ^ $imm :
-      $is_addi ? $src1_value + $imm : 
+      ($is_addi | $is_load) ? $src1_value + $imm : 
       $is_slli ? $src1_value << $imm[5:0] :
       $is_srli ? $src1_value >> $imm[5:0] :
       $is_and ? $src1_value & $src2_value :
@@ -199,6 +199,9 @@
       $is_jalr ? $src1_value + $imm : 32'b0;
    $rd1_en = $rs1_valid;
    $rd2_en = $rs2_valid;
+   
+   //RF data writing logic
+   $rfw_data[31:0] = $is_load ? $ld_data : $result;
   
    //`BOGUS_USE($rd $rd_valid $rs1 $rs1_valid $rs2 $rs2_valid
    //   $funct3 $funct3_valid $imm_valid)
@@ -208,8 +211,8 @@
    m4+tb()
    *failed = *cyc_cnt > M4_MAX_CYC;
    
-   m4+rf(32, 32, $reset, $wr_en, $rd[4:0], $result[31:0], $rd1_en, $rs1[4:0], $src1_value, $rd2_en, $rs2[4:0], $src2_value)
-   //m4+dmem(32, 32, $reset, $addr[4:0], $wr_en, $wr_data[31:0], $rd_en, $rd_data)
+   m4+rf(32, 32, $reset, $wr_en, $rd[4:0], $rfw_data[31:0], $rd1_en, $rs1[4:0], $src1_value, $rd2_en, $rs2[4:0], $src2_value)
+   m4+dmem(32, 32, $reset, $result[4:0], $is_s_instr, $src2_value[31:0], $is_load, $ld_data[31:0])
    m4+cpu_viz()
 \SV
    endmodule
